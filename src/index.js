@@ -4,9 +4,11 @@ import "./index.css"
 class Loop {
   constructor(graphics) {
     this.graphics = graphics;
-    this.animation = {
-
-    }
+    const G = this.graphics;
+    const w = G.canvas.width;
+    const h = G.canvas.height;
+    this.animation = {}
+    this.box = { x: w/2, y: h/2 };
   }
 
   doOneFrame() {
@@ -15,15 +17,12 @@ class Loop {
     const h = G.canvas.height;
     G.rect('black', 0, 0, w, h)
     this.box.x += Math.random() * 2;
-    this.box.y += Math.random() * 2 - 1;
+    this.box.y += Math.random() * 2;
     G.rect('red', this.box.x, this.box.y, 100, 100)
   }
 
   start(fps) {
     const G = this.graphics;
-    const w = G.canvas.width;
-    const h = G.canvas.height;
-    this.box = { x: w/2, y: h/2 };
     cancelAnimationFrame(this.animation.id);
     this.animation.fps = fps || 60
     this.animation.fpsInterval = 1000 / this.animation.fps;
@@ -75,8 +74,8 @@ class Graphics {
 
 const boot = () => {
   const G = new Graphics()
-  const L = new Loop(G)
   G.resize();
+  const L = new Loop(G)
   L.start();
 }
 
