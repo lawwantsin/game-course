@@ -11,6 +11,22 @@ class Loop {
     this.box = { x: w/2, y: h/2 };
   }
 
+  handleInput(e) {
+    console.log("KEY", e.key);
+    if (e.key == "]") {
+      this.animation.fps *= 2
+      this.start(this.animation.fps)
+    }
+    if (e.key == "[") {
+      this.animation.fps /= 2
+      this.start(this.animation.fps)
+    }
+    if (e.key == "CapsLock") {
+      this.animation.stop = !this.animation.stop;
+        this.start(this.animation.fps)
+    }
+  }
+
   doOneFrame() {
     const G = this.graphics;
     const w = G.canvas.width;
@@ -23,6 +39,7 @@ class Loop {
 
   start(fps) {
     const G = this.graphics;
+    Input.setup(this);
     cancelAnimationFrame(this.animation.id);
     this.animation.fps = fps || 60
     this.animation.fpsInterval = 1000 / this.animation.fps;
@@ -71,6 +88,36 @@ class Graphics {
   }
 }
 
+let KEYS_PRESSED = {}
+class Input {
+  constructor() {
+    console.error("Please use as Singleton");
+  }
+
+  static setup(loop) {
+    window.addEventListener('keydown', e => {
+      this.keyDown(e);
+      loop.handleInput(e);
+    }, false)
+    window.addEventListener('keyup', e => {
+      this.keyUp(e);
+      loop.handleInput(e);
+    }, false)
+  }
+
+  static keyDown(e) {
+    KEYS_PRESSED[e.key] = true;
+    console.log("KEY: ", Object.keys(KEYS_PRESSED).join(", "));
+  }
+
+  static keyUp(e) {
+    KEYS_PRESSED[e.key] = false;
+  }
+
+  static isPressed(key) {
+    return KEYS_PRESSED[key]
+  }
+}
 
 const boot = () => {
   const G = new Graphics()
