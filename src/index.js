@@ -163,6 +163,12 @@ class Map {
     ];
   }
 
+  hitWall(x, y) {
+    const col = Math.floor(x / this.TILE_WIDTH);
+    const row = Math.floor(y / this.TILE_HEIGHT);
+    return this.grid[row][col];
+  }
+
   resize() {
     this.MAP_NUM_ROWS = this.grid.length;
     this.MAP_NUM_COLS = this.grid[0].length;
