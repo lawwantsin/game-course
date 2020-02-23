@@ -2,23 +2,25 @@ import "./index.css"
 
 let KEYS_PRESSED = {}
 
-let G;
+let G, M, error;
 
 class Graphics {
   constructor() {
     this.canvas = document.querySelector("canvas");
     this.context = this.canvas.getContext("2d");
-    window.addEventListener('resize', this.resize);
+    window.addEventListener('resize', () => this.resize());
   }
   resize() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+    M.resize();
   }
   validate() {
     const args = Array.from(arguments);
     args.map((a, i) => {
-      if (typeof a === 'undefined' || a == null) {
+      if ((typeof a === 'undefined' || a == null) && !error) {
         console.error(`Canvas Draw argument missing (${args.join(', ')})`);
+        error = true;
       }
     });
   }
@@ -31,6 +33,7 @@ class Graphics {
     this.validate(color, x1, y2, x2, y2);
     this.context.strokeStyle = color;
     this.context.beginPath();
+    this.context.lineWidth = 2
     this.context.moveTo(x1, y1);
     this.context.lineTo(x2, y2);
     this.context.stroke();
@@ -48,9 +51,11 @@ class Loop {
   constructor(G) {
     this.graphics = G;
     this.animation = {}
+    this.mode = true;
     const w = G.canvas.width;
     const h = G.canvas.height;
-    this.box = new Player(this.graphics);
+    this.player = new Player(this.graphics);
+    this.map = new Map(G)
     window.addEventListener('keyup', e => this.handleUp(e))
     window.addEventListener('keydown', e => this.handleDown(e))
   }
@@ -74,76 +79,36 @@ class Loop {
       this.animation.stop = !this.animation.stop;
         this.start(this.animation.fps)
     }
+    if (e.key == "Escape") {
+      this.mode = !this.mode;
+    }
   }
 
-  move() {
-    if (KEYS_PRESSED["ArrowUp"] && !this.box.jumping) {
-      this.box.vy += -50;
-      this.box.jumping = true;
-    }
-    if (KEYS_PRESSED["ArrowLeft"]) {
-      if (this.box.vx < 0) this.box.vx = -.5;
-      this.box.vx -= 10;
-    }
-    if (KEYS_PRESSED["ArrowRight"]) {
-      if (this.box.vx > 0) this.box.vx = .5;
-      this.box.vx += 10;
-    }
-    if (KEYS_PRESSED["ArrowDown"]) {
-      this.box.vy += 2;
-    }
-    this.box.vy += 1;  // Gravity
-
-    // Collision
-    const G = this.graphics;
-    const floor = G.canvas.height - 10 - this.box.h
-
-    if (this.box.y > floor) {  // On floor.
-      this.box.vy = 0;
-      this.box.vx *= .8       // Floor friction
-      this.box.jumping = false;
-      this.box.y = floor
-    }
-    else {
-      this.box.vy *= .9   // Air friction
-      this.box.vx *= .9
-    }
-    this.box.x += this.box.vx;  // Move box
-    this.box.y += this.box.vy;
+  movePF() {
+    this.player.inputPF();
+    this.player.updatePF();
+    this.player.renderPF();
   }
 
   moveTD() {
-    if (KEYS_PRESSED["ArrowUp"] && !this.box.jumping) {
-      this.box.walkDirection += .3;
-    }
-    else if (KEYS_PRESSED["ArrowDown"]) {
-      this.box.walkDirection -= .3;
-    }
-    else {
-      this.box.walkDirection *= 0.99;
-    }
-    if (KEYS_PRESSED["ArrowLeft"]) {
-      this.box.turnDirection -= 1;
-    }
-    else if (KEYS_PRESSED["ArrowRight"]) {
-      this.box.turnDirection += 1;
-    }
-    else {
-      this.box.turnDirection *= .5
-    }
-    this.box.update();
-    this.box.render();
+    this.player.inputTD();
+    this.player.updateTD();
+    this.player.renderTD();
   }
 
-  doOneFrame() {
+  drawBG() {
     const G = this.graphics;
     const cw = G.canvas.width;
     const ch = G.canvas.height;
     G.rect('black', 0, 0, cw, ch)
-    this.moveTD(G);
-    // const { x, y, h, w } = this.box;
-    // G.rect('red', x, y, w, h)
-    // G.rect('white', 0, ch - 10, cw, 10)
+  }
+
+  doOneFrame() {
+    const G = this.graphics;
+    this.drawBG();
+    M.render();
+    if (this.mode) this.moveTD();
+    else this.movePF();
   }
 
   start(fps) {
@@ -172,14 +137,60 @@ class Loop {
 
 const boot = () => {
   G = new Graphics()
+  M = new Map(G);
+
   G.resize();
+  M.resize();
   const L = new Loop(G)
   L.start();
+}
+
+class Map {
+  constructor(G) {
+    this.graphics = G;
+    this.grid = [
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+      [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ];
+  }
+
+  resize() {
+    this.MAP_NUM_ROWS = this.grid.length;
+    this.MAP_NUM_COLS = this.grid[0].length;
+    this.TILE_HEIGHT = this.graphics.canvas.height / this.MAP_NUM_ROWS;
+    this.TILE_WIDTH = this.graphics.canvas.width / this.MAP_NUM_COLS;
+  }
+
+  render() {
+    for (var i = 0; i < this.MAP_NUM_ROWS; i++) {
+      for (var j = 0; j < this.MAP_NUM_COLS; j++) {
+        var tileX = j * this.TILE_WIDTH;
+        var tileY = i * this.TILE_HEIGHT;
+        var tileColor = this.grid[i][j] == 1 ? "#222" : "#fff";
+        this.graphics.rect(tileColor, tileX, tileY, this.TILE_WIDTH, this.TILE_HEIGHT);
+      }
+    }
+  }
+
 }
 
 class Player {
   constructor(G) {
     this.graphics = G;
+    this.jumping = false;
+    this.vx = 0;
+    this.vy = 0;
+    this.h = 30;
+    this.w = 30;
     this.x = G.canvas.width / 2;
     this.y = G.canvas.height / 2;
     this.radius = 30;
@@ -190,14 +201,85 @@ class Player {
     this.rotationSpeed = .2 * (Math.PI / 180);
   }
 
-  update() {
-    this.rotationAngle += this.turnDirection * this.rotationSpeed;
-    var moveStep = this.walkDirection * this.moveSpeed;
-    this.x += Math.cos(this.rotationAngle) * moveStep;
-    this.y += Math.sin(this.rotationAngle) * moveStep;
+  inputTD() {
+    if (KEYS_PRESSED["ArrowUp"]) {
+      this.walkDirection += .3;
+    }
+    else if (KEYS_PRESSED["ArrowDown"]) {
+      this.walkDirection -= .3;
+    }
+    else {
+      this.walkDirection *= 0.99;
+    }
+    if (KEYS_PRESSED["ArrowLeft"]) {
+      this.turnDirection -= 1;
+    }
+    else if (KEYS_PRESSED["ArrowRight"]) {
+      this.turnDirection += 1;
+    }
+    else {
+      this.turnDirection *= .5
+    }
   }
 
-  render() {
+  inputPF() {
+    if (KEYS_PRESSED["ArrowUp"] && !this.jumping) {
+      this.vy += -50;
+      this.jumping = true;
+    }
+    if (KEYS_PRESSED["ArrowLeft"]) {
+      if (this.vx < 0) this.vx = -.5;
+      this.vx -= 10;
+    }
+    if (KEYS_PRESSED["ArrowRight"]) {
+      if (this.vx > 0) this.vx = .5;
+      this.vx += 10;
+    }
+    if (KEYS_PRESSED["ArrowDown"]) {
+      this.vy += 2;
+    }
+  }
+
+  updateTD() {
+    this.rotationAngle += this.turnDirection * this.rotationSpeed;
+    var moveStep = this.walkDirection * this.moveSpeed;
+    if (M.hitWall(this.x, this.y)) {
+      this.moveSpeed *= -.9;
+    }
+    else {
+      this.x += Math.cos(this.rotationAngle) * moveStep;
+      this.y += Math.sin(this.rotationAngle) * moveStep;
+    }
+  }
+
+  renderPF() {
+    const { x, y, h, w } = this;
+    G.rect('red', x, y, w, h)
+  }
+
+  updatePF() {
+    this.vy += 1;  // Gravity
+    this.h = this.w = 40;
+
+    // Collision
+    const G = this.graphics;
+    const floor = G.canvas.height - 10 - this.h
+
+    if (this.y > floor) {  // On floor.
+      this.vy = 0;
+      this.vx *= .8       // Floor friction
+      this.jumping = false;
+      this.y = floor
+    }
+    else {
+      this.vy *= .9   // Air friction
+      this.vx *= .9
+    }
+    this.x += this.vx;  // Move box
+    this.y += this.vy;
+  }
+
+  renderTD() {
     this.graphics.circle('red', this.x, this.y, this.radius);
     this.graphics.line('black', this.x, this.y,
       this.x + Math.cos(this.rotationAngle) * 30,
