@@ -1,22 +1,56 @@
 import "./index.css"
 
 let KEYS_PRESSED = {}
+
+let G;
+
+class Graphics {
+  constructor() {
+    this.canvas = document.querySelector("canvas");
+    this.context = this.canvas.getContext("2d");
+    window.addEventListener('resize', this.resize);
+  }
+  resize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+  validate() {
+    const args = Array.from(arguments);
+    args.map((a, i) => {
+      if (typeof a === 'undefined' || a == null) {
+        console.error(`Canvas Draw argument missing (${args.join(', ')})`);
+      }
+    });
+  }
+  rect(color, x, y, w, h) {
+    this.validate(color, x, y, w, h);
+    this.context.fillStyle = color;
+    this.context.fillRect(x, y, w, h);
+  }
+  line(color, x1, y1, x2, y2) {
+    this.validate(color, x1, y2, x2, y2);
+    this.context.strokeStyle = color;
+    this.context.beginPath();
+    this.context.moveTo(x1, y1);
+    this.context.lineTo(x2, y2);
+    this.context.stroke();
+  }
+  circle(color, x, y, radius) {
+    this.validate(color, x, y, radius);
+    this.context.fillStyle = color;
+    this.context.beginPath();
+    this.context.arc(x, y, radius, 0, 2 * Math.PI);
+    this.context.fill();
+  }
+}
+
 class Loop {
-  constructor(graphics) {
-    this.graphics = graphics;
+  constructor(G) {
+    this.graphics = G;
     this.animation = {}
-    const G = this.graphics;
     const w = G.canvas.width;
     const h = G.canvas.height;
-    this.box = {
-      x: w/2,
-      y: h/2,
-      h: 90,
-      w: 90,
-      vx: 0,
-      vy: 0,
-      jumping: false
-     };
+    this.box = new Player(this.graphics);
     window.addEventListener('keyup', e => this.handleUp(e))
     window.addEventListener('keydown', e => this.handleDown(e))
   }
@@ -78,15 +112,38 @@ class Loop {
     this.box.y += this.box.vy;
   }
 
+  moveTD() {
+    if (KEYS_PRESSED["ArrowUp"] && !this.box.jumping) {
+      this.box.walkDirection += .3;
+    }
+    else if (KEYS_PRESSED["ArrowDown"]) {
+      this.box.walkDirection -= .3;
+    }
+    else {
+      this.box.walkDirection *= 0.99;
+    }
+    if (KEYS_PRESSED["ArrowLeft"]) {
+      this.box.turnDirection -= 1;
+    }
+    else if (KEYS_PRESSED["ArrowRight"]) {
+      this.box.turnDirection += 1;
+    }
+    else {
+      this.box.turnDirection *= .5
+    }
+    this.box.update();
+    this.box.render();
+  }
+
   doOneFrame() {
     const G = this.graphics;
     const cw = G.canvas.width;
     const ch = G.canvas.height;
-    this.move();
-    const { x, y, h, w } = this.box;
     G.rect('black', 0, 0, cw, ch)
-    G.rect('red', x, y, w, h)
-    G.rect('white', 0, ch - 10, cw, 10)
+    this.moveTD(G);
+    // const { x, y, h, w } = this.box;
+    // G.rect('red', x, y, w, h)
+    // G.rect('white', 0, ch - 10, cw, 10)
   }
 
   start(fps) {
@@ -113,37 +170,39 @@ class Loop {
   }
 }
 
-class Graphics {
-  constructor() {
-    this.canvas = document.querySelector("canvas");
-    this.context = this.canvas.getContext("2d");
-    window.addEventListener('resize', this.resize);
-  }
-  resize() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
-  }
-  validate() {
-    const args = Array.from(arguments);
-    args.map((a, i) => {
-      if (typeof a === 'undefined' || a == null) {
-        console.error(`Canvas Draw argument missing (${args.join(', ')})`);
-      }
-    });
-  }
-  rect(color, x, y, w, h) {
-    this.validate(color, x, y, w, h);
-    this.context.fillStyle = color;
-    this.context.fillRect(x, y, w, h);
-  }
-}
-
-
 const boot = () => {
-  const G = new Graphics()
+  G = new Graphics()
   G.resize();
   const L = new Loop(G)
   L.start();
+}
+
+class Player {
+  constructor(G) {
+    this.graphics = G;
+    this.x = G.canvas.width / 2;
+    this.y = G.canvas.height / 2;
+    this.radius = 30;
+    this.turnDirection = 0;
+    this.walkDirection = 0;
+    this.rotationAngle = Math.PI / 2;
+    this.moveSpeed = .3;
+    this.rotationSpeed = .2 * (Math.PI / 180);
+  }
+
+  update() {
+    this.rotationAngle += this.turnDirection * this.rotationSpeed;
+    var moveStep = this.walkDirection * this.moveSpeed;
+    this.x += Math.cos(this.rotationAngle) * moveStep;
+    this.y += Math.sin(this.rotationAngle) * moveStep;
+  }
+
+  render() {
+    this.graphics.circle('red', this.x, this.y, this.radius);
+    this.graphics.line('black', this.x, this.y,
+      this.x + Math.cos(this.rotationAngle) * 30,
+      this.y + Math.sin(this.rotationAngle) * 30)
+  }
 }
 
 window.onload = boot
