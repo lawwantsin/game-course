@@ -243,9 +243,6 @@ class Player {
   updateTD() {
     this.rotationAngle += this.turnDirection * this.rotationSpeed;
     var moveStep = this.walkDirection * this.moveSpeed;
-    if (M.hitWall(this.x, this.y)) {
-      this.moveSpeed *= -.9;
-    }
     else {
       this.x += Math.cos(this.rotationAngle) * moveStep;
       this.y += Math.sin(this.rotationAngle) * moveStep;
