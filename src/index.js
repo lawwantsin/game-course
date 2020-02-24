@@ -2,7 +2,7 @@ import "./index.css"
 
 let KEYS_PRESSED = {}
 
-let G, M, error;
+let G, error;
 
 class Graphics {
   constructor() {
@@ -13,7 +13,6 @@ class Graphics {
   resize() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    M.resize();
   }
   validate() {
     const args = Array.from(arguments);
@@ -54,8 +53,6 @@ class Loop {
     this.mode = true;
     const w = G.canvas.width;
     const h = G.canvas.height;
-    this.player = new Player(this.graphics);
-    this.map = new Map(G)
     window.addEventListener('keyup', e => this.handleUp(e))
     window.addEventListener('keydown', e => this.handleDown(e))
   }
@@ -84,18 +81,6 @@ class Loop {
     }
   }
 
-  movePF() {
-    this.player.inputPF();
-    this.player.updatePF();
-    this.player.renderPF();
-  }
-
-  moveTD() {
-    this.player.inputTD();
-    this.player.updateTD();
-    this.player.renderTD();
-  }
-
   drawBG() {
     const G = this.graphics;
     const cw = G.canvas.width;
@@ -106,9 +91,7 @@ class Loop {
   doOneFrame() {
     const G = this.graphics;
     this.drawBG();
-    M.render();
-    if (this.mode) this.moveTD();
-    else this.movePF();
+
   }
 
   start(fps) {
@@ -137,160 +120,11 @@ class Loop {
 
 const boot = () => {
   G = new Graphics()
-  M = new Map(G);
 
   G.resize();
-  M.resize();
   const L = new Loop(G)
   L.start();
 }
 
-class Map {
-  constructor(G) {
-    this.graphics = G;
-    this.grid = [
-      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
-      [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ];
-  }
-
-  hitWall(x, y) {
-    const col = Math.floor(x / this.TILE_WIDTH);
-    const row = Math.floor(y / this.TILE_HEIGHT);
-    return this.grid[row][col];
-  }
-
-  resize() {
-    this.MAP_NUM_ROWS = this.grid.length;
-    this.MAP_NUM_COLS = this.grid[0].length;
-    this.TILE_HEIGHT = this.graphics.canvas.height / this.MAP_NUM_ROWS;
-    this.TILE_WIDTH = this.graphics.canvas.width / this.MAP_NUM_COLS;
-  }
-
-  render() {
-    for (var i = 0; i < this.MAP_NUM_ROWS; i++) {
-      for (var j = 0; j < this.MAP_NUM_COLS; j++) {
-        var tileX = j * this.TILE_WIDTH;
-        var tileY = i * this.TILE_HEIGHT;
-        var tileColor = this.grid[i][j] == 1 ? "#222" : "#fff";
-        this.graphics.rect(tileColor, tileX, tileY, this.TILE_WIDTH, this.TILE_HEIGHT);
-      }
-    }
-  }
-
-}
-
-class Player {
-  constructor(G) {
-    this.graphics = G;
-    this.jumping = false;
-    this.vx = 0;
-    this.vy = 0;
-    this.h = 30;
-    this.w = 30;
-    this.x = G.canvas.width / 2;
-    this.y = G.canvas.height / 2;
-    this.radius = 30;
-    this.turnDirection = 0;
-    this.walkDirection = 0;
-    this.rotationAngle = Math.PI / 2;
-    this.moveSpeed = .3;
-    this.rotationSpeed = .2 * (Math.PI / 180);
-  }
-
-  inputTD() {
-    if (KEYS_PRESSED["ArrowUp"]) {
-      this.walkDirection += .3;
-    }
-    else if (KEYS_PRESSED["ArrowDown"]) {
-      this.walkDirection -= .3;
-    }
-    else {
-      this.walkDirection *= 0.99;
-    }
-    if (KEYS_PRESSED["ArrowLeft"]) {
-      this.turnDirection -= 1;
-    }
-    else if (KEYS_PRESSED["ArrowRight"]) {
-      this.turnDirection += 1;
-    }
-    else {
-      this.turnDirection *= .5
-    }
-  }
-
-  inputPF() {
-    if (KEYS_PRESSED["ArrowUp"] && !this.jumping) {
-      this.vy += -50;
-      this.jumping = true;
-    }
-    if (KEYS_PRESSED["ArrowLeft"]) {
-      if (this.vx < 0) this.vx = -.5;
-      this.vx -= 10;
-    }
-    if (KEYS_PRESSED["ArrowRight"]) {
-      if (this.vx > 0) this.vx = .5;
-      this.vx += 10;
-    }
-    if (KEYS_PRESSED["ArrowDown"]) {
-      this.vy += 2;
-    }
-  }
-
-  updateTD() {
-    this.rotationAngle += this.turnDirection * this.rotationSpeed;
-    var moveStep = this.walkDirection * this.moveSpeed;
-    if (M.hitWall(this.x, this.y)) {
-      this.moveSpeed *= -.9;
-    }
-    else {
-      this.x += Math.cos(this.rotationAngle) * moveStep;
-      this.y += Math.sin(this.rotationAngle) * moveStep;
-    }
-  }
-
-  renderPF() {
-    const { x, y, h, w } = this;
-    G.rect('red', x, y, w, h)
-  }
-
-  updatePF() {
-    this.vy += 1;  // Gravity
-    this.h = this.w = 40;
-
-    // Collision
-    const G = this.graphics;
-    const floor = G.canvas.height - 10 - this.h
-
-    if (this.y > floor) {  // On floor.
-      this.vy = 0;
-      this.vx *= .8       // Floor friction
-      this.jumping = false;
-      this.y = floor
-    }
-    else {
-      this.vy *= .9   // Air friction
-      this.vx *= .9
-    }
-    this.x += this.vx;  // Move box
-    this.y += this.vy;
-  }
-
-  renderTD() {
-    this.graphics.circle('red', this.x, this.y, this.radius);
-    this.graphics.line('black', this.x, this.y,
-      this.x + Math.cos(this.rotationAngle) * 30,
-      this.y + Math.sin(this.rotationAngle) * 30)
-  }
-}
 
 window.onload = boot
