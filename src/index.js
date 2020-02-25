@@ -1,6 +1,7 @@
 import "./index.css"
 
-let KEYS_PRESSED = {}, G, error;
+
+let KEYS_PRESSED = {}, G, error, before = Date.now();
 class Graphics {
   constructor() {
     this.canvas = document.querySelector("canvas");
@@ -26,7 +27,8 @@ class Graphics {
     this.c.rect('black', 0, 0, cw, ch)
   }
   point(color, x, y) {
-    this.circle(color, x, y, 2, 2);
+    this.validate(color, x, y);
+    this.circle(color, x, y, 3);
   }
   rect(color, x, y, w, h) {
     this.validate(color, x, y, w, h);
@@ -34,13 +36,20 @@ class Graphics {
     this.c.fillRect(x, y, w, h);
   }
   outlineRect(color, x, y, w, h) {
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
     this.validate(color, x, y, w, h);
     this.c.strokeStyle = color;
-    this.c.lineWidth = 1;
-    // this.c.save();
-    // this.c.translate(-w/2, -h/2);
-    this.c.strokeRect(x, y, w, h);
-    // this.c.restore();
+    this.c.lineWidth = .25;
+    this.c.save();
+    this.c.translate(x, y);
+    this.c.strokeRect(0, 0, w, h);
+    this.c.restore();
+  }
+  text(text, x, y, color = 'white') {
+    this.c.fillStyle = color;
+    this.c.font = "12px Hack";
+    this.c.fillText(text, x, y);
   }
   line(color, x1, y1, x2, y2) {
     this.validate(color, x1, y2, x2, y2);
@@ -60,18 +69,18 @@ class Graphics {
   }
   drawPoints(points) {
     points.map((p, i) => {
-      this.point('green', p.x, p.y);
+      this.point('red', p.x, p.y);
     })
   }
-  drawQuadTree(qt) {
+  drawQuadTree(qt, color = 'silver') {
     const { x, y, w, h } = qt.boundary;
-    this.outlineRect('green', x, y, w, h);
+    this.outlineRect('rgba(155,155,155,0.25)', x, y, w, h);
     this.drawPoints(qt.points);
     if (qt.divided) {
-      this.drawQuadTree(qt.northeast);
-      this.drawQuadTree(qt.northwest);
-      this.drawQuadTree(qt.southeast);
-      this.drawQuadTree(qt.southwest);
+      this.drawQuadTree(qt.northeast, 'yellow');
+      this.drawQuadTree(qt.northwest, 'green');
+      this.drawQuadTree(qt.southeast, 'blue');
+      this.drawQuadTree(qt.southwest, 'purple');
     }
   }
 }
@@ -86,18 +95,23 @@ class Loop {
     const h = G.canvas.height;
     const cw = w/2
     const ch = h/2
+    let boundary = new Bounds(0, 0, w, h);
+    this.qt = new QuadTree(boundary, 8);
 
-    let boundary = new Rect(cw, ch, w, h);
-    this.qt = new QuadTree(boundary, 1);
-
-    for (var i = 0; i < 100; i++) {
-      let p = new Point(Math.random()*w, Math.random()*h);
-      this.points.push(p);
-      this.qt.insert(p);
-    }
-
+    window.addEventListener('mousemove', e => this.handleMouseDown(e))
     window.addEventListener('keyup', e => this.handleUp(e))
     window.addEventListener('keydown', e => this.handleDown(e))
+  }
+
+  handleMouseDown(e) {
+    const x = e.clientX;
+    const y = e.clientY;
+    const now = Date.now();
+    if ((now - before > 25) && e.buttons) {
+      const p = new Point(x, y)
+      this.qt.insert(p);
+      before = Date.now();
+    }
   }
 
   handleUp(e) {
@@ -133,8 +147,15 @@ class Loop {
   doOneFrame() {
     const G = this.graphics;
     G.drawBG();
-    // G.drawPoints(this.points);
-    G.drawQuadTree(this.qt);
+    this.move(this.points);
+    G.drawQuadTree(this.qt, 'white');
+  }
+
+  move(points) {
+    for (var i = 0; i < this.points.length; i++) {
+      this.points[i].x += 1
+      this.points[i].y += 1
+    }
   }
 
   start(fps) {
@@ -161,7 +182,6 @@ class Loop {
   }
 }
 
-
 // Collisions
 class Point {
   constructor(x, y) {
@@ -170,7 +190,7 @@ class Point {
   }
 }
 
-class Rect {
+class Bounds {
   constructor(x, y, w, h) {
     this.x = x;
     this.y = y;
@@ -186,6 +206,14 @@ class Rect {
       point.y < y + h
     )
   }
+  intersects(range) {
+    return (
+      range.x - range.w > this.x + this.w ||
+      range.x + this.w < this.x - this.w ||
+      range.y - range.h > this.y + this.h ||
+      range.y + this.h < this.y - this.h
+    )
+  }
 }
 
 class QuadTree {
@@ -194,22 +222,21 @@ class QuadTree {
     this.capacity = capacity;
     this.points = [];
     this.divided = false;
-    this.northeast
   }
 
   subdivide() {
     const c = this.capacity;
     let { x, y, w, h } = this.boundary;
-    w = w/2;
     h = h/2;
-    let ne = new Rect(x + w, y - h, w, h);
-    this.northeast = new QuadTree(ne, c);
-    let nw = new Rect(x - w, y - h, w, h);
-    this.northwest = new QuadTree(nw, c);
-    let se = new Rect(x + w, y + h, w, h);
-    this.southeast = new QuadTree(se, c);
-    let sw = new Rect(x - w, y + h, w, h);
-    this.southwest = new QuadTree(sw, c);
+    w = w/2;
+    let ne = new Bounds(x + w, y, w, h);
+    this.northeast = new QuadTree(ne, this.capacity);
+    let nw = new Bounds(x, y, w, h);
+    this.northwest = new QuadTree(nw, this.capacity);
+    let se = new Bounds(x + w, y + h, w, h);
+    this.southeast = new QuadTree(se, this.capacity);
+    let sw = new Bounds(x, y + h, w, h);
+    this.southwest = new QuadTree(sw, this.capacity);
     this.divided = true;
   }
 
@@ -221,12 +248,29 @@ class QuadTree {
     } else {
       if (!this.divided) {
         this.subdivide();
-        return (this.northeast.insert(point) ||
-                this.northwest.insert(point) ||
-                this.southeast.insert(point) ||
-                this.southwest.insert(point))
+      }
+      return (this.northeast.insert(point) ||
+              this.northwest.insert(point) ||
+              this.southeast.insert(point) ||
+              this.southwest.insert(point));
+    }
+  }
+
+  query(range, found) {
+    if (!found) found = [];
+    if (!range.intersects(this.boundary)) return found;
+    for (let p of this.points) {
+      if (range.contains(p)) {
+        found.push(p);
       }
     }
+    if (this.divided) {
+      this.northwest.query(range, found);
+      this.northeast.query(range, found);
+      this.southwest.query(range, found);
+      this.southeast.query(range, found);
+    }
+    return found;
   }
 }
 
