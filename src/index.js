@@ -2,6 +2,7 @@ import "./index.css"
 
 
 let KEYS_PRESSED = {}, G, error, before = Date.now();
+const QUAD_TREE_CAP = 1;
 class Graphics {
   constructor() {
     this.canvas = document.querySelector("canvas");
@@ -41,10 +42,10 @@ class Graphics {
     this.validate(color, x, y, w, h);
     this.c.strokeStyle = color;
     this.c.lineWidth = 1;
-    this.c.save();
-    this.c.translate(x, y);
-    this.c.strokeRect(0, 0, w, h);
-    this.c.restore();
+    // this.c.save();
+    // this.c.translate(, y);
+    this.c.strokeRect(x, y, w, h);
+    // this.c.restore();
   }
   text(text, x, y, color = 'white') {
     this.c.fillStyle = color;
@@ -93,6 +94,7 @@ class Loop {
     this.animation = {}
     this.points = [];
     this.mode = true;
+    this.force = {x: 0, y: 0}
     window.addEventListener('mousemove', e => this.handleMouseDown(e))
     window.addEventListener('keyup', e => this.handleUp(e))
     window.addEventListener('keydown', e => this.handleDown(e))
@@ -102,11 +104,17 @@ class Loop {
     const x = e.clientX;
     const y = e.clientY;
     const now = Date.now();
-    if ((now - before > 25) && e.buttons) {
+    if ((now - before > 1) && e.buttons) {
       const p = new Point(x, y)
       this.points.push(p);
       before = Date.now();
     }
+    else {
+      const cw = this.graphics.canvas.width/2;
+      const ch = this.graphics.canvas.height/2;
+      this.force.x = cw - x > 0 ? -1 : 1;
+      this.force.y = ch - y > 0 ? -1 : 1;
+     }
   }
 
   handleUp(e) {
@@ -142,7 +150,7 @@ class Loop {
     const w = G.canvas.width;
     const h = G.canvas.height;
     let boundary = new Bounds(0, 0, w, h);
-    let qt = new QuadTree(boundary, 1);
+    let qt = new QuadTree(boundary, QUAD_TREE_CAP);
     this.points.map(p => qt.insert(p));
     return qt;
   }
@@ -157,8 +165,8 @@ class Loop {
 
   movePoints() {
     for (var i = 0; i < this.points.length; i++) {
-      this.points[i].x += 1
-      this.points[i].y += 1
+      this.points[i].x += this.force.x
+      this.points[i].y += this.force.y
     }
   }
 
