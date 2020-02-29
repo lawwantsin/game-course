@@ -1,23 +1,19 @@
 import "./index.css"
 import Vector from "./vector"
-import Player from "./player"
+import Player from "./topdown"
 import Loop from "./loop"
 import Map from "./map"
 import Graphics from "./graphics"
-import { room } from "./map-data"
+import { room, maze } from "./map-data"
 
 window.KEYS_PRESSED = {}
 
-let G, M, P, error;
-
 const boot = () => {
+  let G, M, P, L;
   G = new Graphics()
-  M = new Map(G, room);
+  M = new Map(G, maze);
   P = new Player(G);
-
-  G.resize();
-  M.resize();
-  const L = new Loop(G, P, M)
+  L = new Loop(G, P, M)
   L.start();
 }
 

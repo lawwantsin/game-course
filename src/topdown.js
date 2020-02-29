@@ -1,9 +1,9 @@
 import Vector from "./vector";
+const NORMAL = 0, DEBUG = 1;
 
 class Player {
   constructor(G) {
     this.graphics = G;
-    this.jumping = false;
     this.vx = 0;
     this.vy = 0;
     this.h = 60;
@@ -23,12 +23,12 @@ class Player {
     this.color = 'green'
   }
 
-  inputTD() {
+  input() {
     if (KEYS_PRESSED["ArrowUp"]) {
-      this.walkDirection += .3;
+      this.walkDirection += .2;
     }
     else if (KEYS_PRESSED["ArrowDown"]) {
-      this.walkDirection -= .3;
+      this.walkDirection -= .2;
     }
     else {
       this.walkDirection *= 0.99;
@@ -44,29 +44,14 @@ class Player {
     }
   }
 
-  inputPF() {
-    if (KEYS_PRESSED["ArrowUp"] && !this.jumping) {
-      this.vy += -50;
-      this.jumping = true;
-    }
-    if (KEYS_PRESSED["ArrowLeft"]) {
-      if (this.vx < 0) this.vx = -.5;
-      this.vx -= 10;
-    }
-    if (KEYS_PRESSED["ArrowRight"]) {
-      if (this.vx > 0) this.vx = .5;
-      this.vx += 10;
-    }
-    if (KEYS_PRESSED["ArrowDown"]) {
-      this.vy += 2;
-    }
-  }
-
-  updateTD() {
+  update() {
     this.rotationAngle += this.turnDirection * this.rotationSpeed;
     const moveStep = this.walkDirection * this.moveSpeed;
     this.vx = Math.cos(this.rotationAngle) * moveStep;
     this.vy = Math.sin(this.rotationAngle) * moveStep;
+    if (Math.abs(this.vx) < .1) this.vx = 0;
+    if (Math.abs(this.vy) < .1) this.vy = 0;
+
     // const hitWall = this.map.hitOuter(this.x + this.vx, this.y + this.vy, this.radius);
     // console.log(hitWall)
     // if (hitWall) {
@@ -80,39 +65,23 @@ class Player {
     this.y += this.vy;
   }
 
-  renderPF() {
-    const { x, y, h, w } = this;
-    G.rect('red', x, y, w, h)
-  }
-
-  updatePF() {
-    this.vy += 1;  // Gravity
-    this.h = this.w = 40;
-
-    // Collision
-    const G = this.graphics;
-    const floor = G.canvas.height - 10 - this.h
-
-    if (this.y > floor) {  // On floor.
-      this.vy = 0;
-      this.vx *= .8       // Floor friction
-      this.jumping = false;
-      this.y = floor
-    }
-    else {
-      this.vy *= .9   // Air friction
-      this.vx *= .9
-    }
-    this.x += this.vx;  // Move box
-    this.y += this.vy;
-  }
-
-  renderTD() {
-    this.graphics.circle(this.color, this.x, this.y, this.radius);
-    this.graphics.text(parseInt(this.rotationAngle), this.x, this.y);
-    this.graphics.line('black', this.x, this.y,
+  render() {
+    const g = this.graphics;
+    g.circle(this.color, this.x, this.y, this.radius);
+    g.line('black', this.x, this.y,
       this.x + Math.cos(this.rotationAngle) * 30,
       this.y + Math.sin(this.rotationAngle) * 30);
+    const newX = this.x + this.vx * 100;
+    const newY = this.y + this.vy * 100;
+    const vel = Math.sqrt((Math.abs(this.vx)*2) + (Math.abs(this.vy)*2));
+    if (this.mode == DEBUG) {
+      g.text(this.rotationAngle.toPrecision(3), this.x, this.y);
+      g.text(vel.toPrecision(3), newX, newY, 'black');
+      g.line('black', newX, newY, this.x, newY);
+      g.line('blue', this.x, newY, this.x, this.y);
+      g.line('red', this.x, this.y, newX, newY);
+    }
+
   }
 }
 

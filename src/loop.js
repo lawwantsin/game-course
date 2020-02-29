@@ -1,12 +1,15 @@
+const NORMAL = 0, DEBUG = 1;
 class Loop {
   constructor(G, player, map) {
     this.graphics = G;
     this.animation = {}
-    this.mode = true;
+    this.mode = DEBUG;
+
     const w = G.canvas.width;
     const h = G.canvas.height;
-    this.player = player;
     this.map = map;
+    this.player = player;
+    this.player.mode = this.mode;
     window.addEventListener('keyup', e => this.handleUp(e))
     window.addEventListener('keydown', e => this.handleDown(e))
   }
@@ -32,6 +35,7 @@ class Loop {
     }
     if (e.key == "Escape") {
       this.mode = !this.mode;
+      this.player.mode = !this.mode;
     }
   }
 
@@ -47,24 +51,31 @@ class Loop {
     this.player.renderTD();
   }
 
+  move() {
+    this.player.input();
+    this.player.update();
+    this.player.render();
+  }
+
   drawBG() {
     const G = this.graphics;
     const cw = G.canvas.width;
     const ch = G.canvas.height;
-    G.rect('black', 0, 0, cw, ch)
+    G.rect('white', 0, 0, cw, ch)
   }
 
   doOneFrame() {
     const G = this.graphics;
     this.drawBG();
     this.map.render();
-    if (this.mode) this.moveTD();
-    else this.movePF();
+    this.move();
+    // if (this.mode) this.moveTD();
+    // else this.movePF();
   }
 
   start(fps) {
     cancelAnimationFrame(this.animation.id);
-    this.animation.fps = fps || 60
+    this.animation.fps = fps || 60;
     this.animation.fpsInterval = 1000 / this.animation.fps;
     this.animation.then = Date.now();
     this.animation.startTime = this.animation.then;

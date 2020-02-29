@@ -3,6 +3,7 @@ class Map {
     this.graphics = G;
     this.grid = grid;
     window.addEventListener('resize', () => this.resize());
+    this.resize();
   }
 
   hitOuterWall(x, y, r) {
