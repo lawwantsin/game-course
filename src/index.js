@@ -163,10 +163,13 @@ class Map {
     ];
   }
 
-  hitWall(x, y) {
-    const col = Math.floor(x / this.TILE_WIDTH);
-    const row = Math.floor(y / this.TILE_HEIGHT);
-    return this.grid[row][col];
+  hitOuter(x, y, r) {
+    // console.log(x, y, r, this.TILE_WIDTH, this.TILE_HEIGHT, this.graphics.canvas.width, this.graphics.canvas.height);
+    var a = ((x - r < this.TILE_WIDTH) ||
+        (x + r > this.graphics.canvas.width - this.TILE_WIDTH) ||
+        (y - r < this.TILE_HEIGHT) ||
+        (y + r > this.graphics.canvas.height - this.TILE_HEIGHT))
+    return a;
   }
 
   resize() {
@@ -195,16 +198,17 @@ class Player {
     this.jumping = false;
     this.vx = 0;
     this.vy = 0;
-    this.h = 30;
-    this.w = 30;
-    this.x = G.canvas.width / 2;
-    this.y = G.canvas.height / 2;
+    this.h = 60;
+    this.w = 60;
+    this.x = Math.floor(G.canvas.width / 2.0);
+    this.y = Math.floor(G.canvas.height / 2.0);
     this.radius = 30;
     this.turnDirection = 0;
     this.walkDirection = 0;
     this.rotationAngle = Math.PI / 2;
     this.moveSpeed = .3;
     this.rotationSpeed = .2 * (Math.PI / 180);
+    this.color = 'green'
   }
 
   inputTD() {
@@ -224,7 +228,7 @@ class Player {
       this.turnDirection += 1;
     }
     else {
-      this.turnDirection *= .5
+      this.turnDirection *= .5;
     }
   }
 
@@ -248,14 +252,22 @@ class Player {
 
   updateTD() {
     this.rotationAngle += this.turnDirection * this.rotationSpeed;
-    var moveStep = this.walkDirection * this.moveSpeed;
-    if (M.hitWall(this.x, this.y)) {
-      this.moveSpeed *= -.9;
+    const moveStep = this.walkDirection * this.moveSpeed;
+    let newX = Math.cos(this.rotationAngle) * moveStep;
+    let newY = Math.sin(this.rotationAngle) * moveStep;
+    const hitWall = M.hitOuter(this.x + newX, this.y + newY, this.radius);
+    // console.log(hitWall)
+    if (hitWall) {
+      this.color = 'red';
+      this.rotationAngle *= -1;
+      newX = Math.cos(this.rotationAngle) * moveStep;
+      newY = Math.sin(this.rotationAngle) * moveStep;
     }
     else {
-      this.x += Math.cos(this.rotationAngle) * moveStep;
-      this.y += Math.sin(this.rotationAngle) * moveStep;
+      this.color = 'green';
     }
+    this.x += newX;
+    this.y += newY;
   }
 
   renderPF() {
@@ -286,10 +298,11 @@ class Player {
   }
 
   renderTD() {
-    this.graphics.circle('red', this.x, this.y, this.radius);
+    this.graphics.circle(this.color, this.x, this.y, this.radius);
     this.graphics.line('black', this.x, this.y,
       this.x + Math.cos(this.rotationAngle) * 30,
-      this.y + Math.sin(this.rotationAngle) * 30)
+      this.y + Math.sin(this.rotationAngle) * 30);
+    this.graphics.text(this.rotationAngle, this.x, this.y);
   }
 }
 
