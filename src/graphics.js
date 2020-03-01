@@ -1,3 +1,4 @@
+let error;
 class Graphics {
   constructor() {
     this.canvas = document.querySelector("canvas");

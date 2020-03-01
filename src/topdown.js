@@ -46,19 +46,39 @@ class Player {
   }
 
   update() {
+    this.color = 'green';
+
     this.rotationAngle += this.turnDirection * this.rotationSpeed;
     const moveStep = this.walkDirection * this.moveSpeed;
+
     this.vx = Math.cos(this.rotationAngle) * moveStep;
     this.vy = Math.sin(this.rotationAngle) * moveStep;
+
+    let hitWall = this.map.hitOuterWall(this.x + this.vx, this.y + this.vy, this.radius);
+    let hitAnyWalls = (hitWall.top || hitWall.left || hitWall.right || hitWall.bottom);
+
     if (Math.abs(this.vx) < .1) this.vx = 0;
     if (Math.abs(this.vy) < .1) this.vy = 0;
-    const hitWall = this.map.hitOuterWall(this.x + this.vx, this.y + this.vy, this.radius);
-    this.color = 'green';
-    if (hitWall.top || hitWall.left || hitWall.right || hitWall.bottom) {
+
+    if (!hitAnyWalls) {
+      hitWall = this.map.hitInnerWalls(this.x + this.vx, this.y + this.vy, this.radius);
+      hitAnyWalls = (hitWall.top || hitWall.left || hitWall.right || hitWall.bottom);
+    }
+
+    if (hitAnyWalls) {
       this.color = 'red';
-      if (hitWall.top || hitWall.bottom) this.vy *= -1;
-      if (hitWall.left || hitWall.right) this.vx *= -1;
-      this.rotationAngle = -Math.atan2(-this.vy, this.vx);
+      if (hitWall.top || hitWall.bottom) {
+        this.vy *= -.01;/;.
+      }
+      if (hitWall.left || hitWall.right) {
+        this.vx *= -.01;
+      }
+      if (this.walkDirection < 0) {
+        this.rotationAngle = -Math.atan2(-this.vy, this.vx);
+        this.walkDirection = Math.abs(this.walkDirection);
+      }
+      else
+        this.rotationAngle = -Math.atan2(-this.vy, this.vx);
       this.vx = Math.cos(this.rotationAngle) * moveStep;
       this.vy = Math.sin(this.rotationAngle) * moveStep;
     }

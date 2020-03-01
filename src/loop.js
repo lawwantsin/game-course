@@ -39,18 +39,6 @@ class Loop {
     }
   }
 
-  movePF() {
-    this.player.inputPF();
-    this.player.updatePF();
-    this.player.renderPF();
-  }
-
-  moveTD() {
-    this.player.inputTD();
-    this.player.updateTD();
-    this.player.renderTD();
-  }
-
   move() {
     this.player.input();
     this.player.update();
@@ -69,8 +57,6 @@ class Loop {
     this.drawBG();
     this.map.render();
     this.move();
-    // if (this.mode) this.moveTD();
-    // else this.movePF();
   }
 
   start(fps) {

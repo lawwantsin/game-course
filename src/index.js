@@ -4,7 +4,7 @@ import Player from "./topdown"
 import Loop from "./loop"
 import Map from "./map"
 import Graphics from "./graphics"
-import { room, maze } from "./map-data"
+import { one, room, maze } from "./map-data"
 
 window.KEYS_PRESSED = {}
 
