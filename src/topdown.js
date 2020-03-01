@@ -68,7 +68,7 @@ class Player {
     if (hitAnyWalls) {
       this.color = 'red';
       if (hitWall.top || hitWall.bottom) {
-        this.vy *= -.01;/;.
+        this.vy *= -.01;
       }
       if (hitWall.left || hitWall.right) {
         this.vx *= -.01;

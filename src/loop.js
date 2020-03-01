@@ -1,62 +1,78 @@
 const NORMAL = 0, DEBUG = 1;
+import { Box, Circle } from "./shapes"
+
 class Loop {
-  constructor(G, player, map) {
+  constructor(G, E, M, I, C) {
+    this.map = M;
+    // this.player = P;
+    // if (this.player) this.player.mode = this.mode;
     this.graphics = G;
+    this.input = I;
     this.animation = {}
     this.mode = DEBUG;
-
-    const w = G.canvas.width;
-    const h = G.canvas.height;
-    this.map = map;
-    this.player = player;
-    this.player.mode = this.mode;
-    window.addEventListener('keyup', e => this.handleUp(e))
-    window.addEventListener('keydown', e => this.handleDown(e))
+    this.entities = E;
+    this.collisions = C;
   }
 
-  handleUp(e) {
-    KEYS_PRESSED[e.key] = false;
-  }
-
-  handleDown(e) {
-    console.log("KEY", e.key);
-    KEYS_PRESSED[e.key] = true;
-    if (e.key == "]") {
+  handleInput() {
+    const K = this.input.KEYS_PRESSED;
+    if (K["]"]) {
       this.animation.fps *= 2
       this.start(this.animation.fps)
     }
-    if (e.key == "[") {
+    if (K["["]) {
       this.animation.fps /= 2
       this.start(this.animation.fps)
     }
-    if (e.key == "CapsLock") {
+    if (K["CapsLock"]) {
       this.animation.stop = !this.animation.stop;
         this.start(this.animation.fps)
     }
-    if (e.key == "Escape") {
+    if (K["Escape"]) {
       this.mode = !this.mode;
-      this.player.mode = !this.mode;
+      if (this.player) this.player.mode = !this.mode;
     }
   }
 
   move() {
-    this.player.input();
-    this.player.update();
-    this.player.render();
+    this.handleInput()
+    if (this.player) {
+      this.player.input();
+      this.player.update();
+      this.player.render();
+    }
   }
 
   drawBG() {
     const G = this.graphics;
     const cw = G.canvas.width;
     const ch = G.canvas.height;
-    G.rect('white', 0, 0, cw, ch)
+    G.rect('white', 0, 0, cw, ch, true)
+  }
+
+  renderMe(x, y) {
+    const C = this.collisions;
+    const G = this.graphics;
+    let fill = false;
+    const me = new Circle(x, y, 100);
+    this.entities.map(e => {
+      const them = e;
+      const fill = C.detectCollision(me, them)
+      me.update(fill);
+      them.update(fill);
+    });
+    me.render(G, 'green');
   }
 
   doOneFrame() {
+    const { x, y, buttons } = this.input.mouse;
     const G = this.graphics;
     this.drawBG();
-    this.map.render();
-    this.move();
+    if (this.map) this.map.render();
+    this.entities.map((t, index) => t.render(G, ['red', 'blue'][index]));
+    if (buttons) {
+      this.renderMe(x, y);
+    }
   }
 
   start(fps) {

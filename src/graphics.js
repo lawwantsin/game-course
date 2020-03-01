@@ -24,26 +24,33 @@ class Graphics {
     this.context.font = "14px Arial";
     this.context.fillText(text, x, y);
   }
-  rect(color, x, y, w, h) {
+  rect(color, x, y, w, h, fill) {
+    const c = this.context;
     this.validate(color, x, y, w, h);
-    this.context.fillStyle = color;
-    this.context.fillRect(x, y, w, h);
+    c.lineWidth = 5
+    c.fillStyle = c.strokeStyle = color;
+    if (fill) c.fillRect(x, y, w, h);
+    else c.strokeRect(x, y, w, h);
   }
   line(color, x1, y1, x2, y2, lineWidth) {
+    const c = this.context;
     this.validate(color, x1, y2, x2, y2);
-    this.context.strokeStyle = color;
-    this.context.beginPath();
-    this.context.lineWidth = lineWidth || 1;
-    this.context.moveTo(x1, y1);
-    this.context.lineTo(x2, y2);
-    this.context.stroke();
+    c.strokeStyle = color;
+    c.beginPath();
+    c.lineWidth = lineWidth || 1;
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    c.stroke();
   }
-  circle(color, x, y, radius) {
+  circle(color, x, y, radius, fill) {
+    const c = this.context;
     this.validate(color, x, y, radius);
-    this.context.fillStyle = color;
-    this.context.beginPath();
-    this.context.arc(x, y, radius, 0, 2 * Math.PI);
-    this.context.fill();
+    c.lineWidth = 5
+    c.fillStyle = c.strokeStyle = color;
+    c.beginPath();
+    c.arc(x, y, radius, 0, 2 * Math.PI);
+    if (fill) c.fill()
+    else c.stroke();
   }
 }
 
