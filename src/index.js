@@ -12,7 +12,7 @@ const boot = () => {
   let G, M, P, L;
   G = new Graphics()
   M = new Map(G, maze);
-  P = new Player(G);
+  P = new Player(G, M);
   L = new Loop(G, P, M)
   L.start();
 }

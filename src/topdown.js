@@ -2,7 +2,8 @@ import Vector from "./vector";
 const NORMAL = 0, DEBUG = 1;
 
 class Player {
-  constructor(G) {
+  constructor(G, M) {
+    this.map = M;
     this.graphics = G;
     this.vx = 0;
     this.vy = 0;
@@ -19,7 +20,7 @@ class Player {
     this.walkDirection = 0;
     this.rotationAngle = Math.PI / 2;
     this.moveSpeed = .3;
-    this.rotationSpeed = .2 * (Math.PI / 180);
+    this.rotationSpeed = .3;
     this.color = 'green'
   }
 
@@ -34,13 +35,13 @@ class Player {
       this.walkDirection *= 0.99;
     }
     if (KEYS_PRESSED["ArrowLeft"]) {
-      this.turnDirection -= 1;
+      this.turnDirection += -.01;
     }
     else if (KEYS_PRESSED["ArrowRight"]) {
-      this.turnDirection += 1;
+      this.turnDirection += .01;
     }
     else {
-      this.turnDirection *= .5;
+      this.turnDirection *= .93;
     }
   }
 
@@ -51,16 +52,16 @@ class Player {
     this.vy = Math.sin(this.rotationAngle) * moveStep;
     if (Math.abs(this.vx) < .1) this.vx = 0;
     if (Math.abs(this.vy) < .1) this.vy = 0;
-
-    // const hitWall = this.map.hitOuter(this.x + this.vx, this.y + this.vy, this.radius);
-    // console.log(hitWall)
-    // if (hitWall) {
-      // this.color = 'red';
-
-    // }
-    // else {
-      this.color = 'green';
-    // }
+    const hitWall = this.map.hitOuterWall(this.x + this.vx, this.y + this.vy, this.radius);
+    this.color = 'green';
+    if (hitWall.top || hitWall.left || hitWall.right || hitWall.bottom) {
+      this.color = 'red';
+      if (hitWall.top || hitWall.bottom) this.vy *= -1;
+      if (hitWall.left || hitWall.right) this.vx *= -1;
+      this.rotationAngle = -Math.atan2(-this.vy, this.vx);
+      this.vx = Math.cos(this.rotationAngle) * moveStep;
+      this.vy = Math.sin(this.rotationAngle) * moveStep;
+    }
     this.x += this.vx;
     this.y += this.vy;
   }
@@ -70,7 +71,7 @@ class Player {
     g.circle(this.color, this.x, this.y, this.radius);
     g.line('black', this.x, this.y,
       this.x + Math.cos(this.rotationAngle) * 30,
-      this.y + Math.sin(this.rotationAngle) * 30);
+      this.y + Math.sin(this.rotationAngle) * 30, 4);
     const newX = this.x + this.vx * 100;
     const newY = this.y + this.vy * 100;
     const vel = Math.sqrt((Math.abs(this.vx)*2) + (Math.abs(this.vy)*2));
