@@ -32,6 +32,11 @@ class Graphics {
     if (fill) c.fillRect(x, y, w, h);
     else c.strokeRect(x, y, w, h);
   }
+  drawBG(color) {
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
+    this.rect(color, 0, 0, cw, ch, true)
+  }
   line(color, x1, y1, x2, y2, lineWidth) {
     const c = this.context;
     this.validate(color, x1, y2, x2, y2);

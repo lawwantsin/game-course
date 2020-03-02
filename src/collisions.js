@@ -1,5 +1,5 @@
 class Collisions {
-  static detectCollision(me, them) {
+  static detect(me, them) {
     const meType = me.constructor.name;
     const themType = them.constructor.name;
     if (meType === 'Circle' && themType === 'Circle') {
@@ -19,6 +19,7 @@ class Collisions {
     if (meType === 'Box' && themType === 'Circle')
       return this.detectCircleBox(them, me);
   }
+
   static detectCircleBox(circle, box) {
     const distance = {};
     distance.x = Math.abs(circle.x - (box.x + box.w/2));

@@ -14,13 +14,8 @@ const boot = () => {
   G = new Graphics()
   C = Collisions;
   I = new Input()
-  const w = G.canvas.width;
-  const h = G.canvas.height;
-  const SIZE = 200;
-  const x = w/2-SIZE/2;
-  const y = h/2-SIZE/2;
-  const r = SIZE/2
-  E = [new Box(x, y, SIZE, SIZE), new Circle(x + r, y + r, r)]
+  M = new Map(G, maze)
+  E = [new Player(G, M, I)]
   L = new Loop(G, E, M, I, C)
   L.start();
 }

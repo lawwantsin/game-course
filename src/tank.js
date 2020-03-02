@@ -16,7 +16,9 @@ class Player {
     this.pos = new Vector(this.x, this.y);
     this.vel = new Vector(this.vx, this.vy);
 
-    this.r = 30;
+    this.radius = 30;
+    this.turnDirection = 0;
+    this.walkDirection = 0;
     this.rotationAngle = Math.PI / 2;
     this.moveSpeed = .3;
     this.rotationSpeed = .3;
@@ -24,54 +26,72 @@ class Player {
   }
 
   input() {
-    const WALKSPEED = .3;
-    const GROUND_FRICTION = .97
     const K = this.inputData.KEYS_PRESSED;
     if (K["ArrowUp"]) {
-      this.vy -= WALKSPEED;
+      this.walkDirection += .2;
     }
     else if (K["ArrowDown"]) {
-      this.vy += WALKSPEED;
+      this.walkDirection -= .2;
     }
     else {
-      this.vy *= GROUND_FRICTION;
+      this.walkDirection *= 0.99;
     }
     if (K["ArrowLeft"]) {
-      this.vx -= WALKSPEED;
+      this.turnDirection += -.01;
     }
     else if (K["ArrowRight"]) {
-      this.vx += WALKSPEED;
+      this.turnDirection += .01;
     }
     else {
-      this.vx *= GROUND_FRICTION;
+      this.turnDirection *= .93;
     }
     return this;
   }
 
   update() {
-    const BOUNCE = .3
     this.color = 'green';
+
+    this.rotationAngle += this.turnDirection * this.rotationSpeed;
+    const moveStep = this.walkDirection * this.moveSpeed;
+
+    this.vx = Math.cos(this.rotationAngle) * moveStep;
+    this.vy = Math.sin(this.rotationAngle) * moveStep;
+
+    let hitWall = this.map.hitOuterWall(this.x + this.vx, this.y + this.vy, this.radius);
+    let hitAnyWalls = (hitWall.top || hitWall.left || hitWall.right || hitWall.bottom);
 
     if (Math.abs(this.vx) < .1) this.vx = 0;
     if (Math.abs(this.vy) < .1) this.vy = 0;
 
-    let hitWall = this.map.hitOuterWall(this.x + this.vx, this.y + this.vy, this.r);
-    let hitAnyWalls = (hitWall.top || hitWall.left || hitWall.right || hitWall.bottom);
-    // if (!hitAnyWalls) {
-    //   hitWall = this.map.hitInnerWalls(this.x + this.vx, this.y + this.vy, this.r);
-    //   hitAnyWalls = (hitWall.top || hitWall.left || hitWall.right || hitWall.bottom);
-    // }
-    // const hitAnyWalls = this.map.detectCollisions(this.x+this.vx, this.vy+this.vy, this.r);
-    if (hitWall.top || hitWall.bottom) this.vy *= -1;
-    if (hitWall.left || hitWall.right) this.vx *= -1;
-    this.rotationAngle = -Math.atan2(-this.vy, this.vx);
+    if (!hitAnyWalls) {
+      hitWall = this.map.hitInnerWalls(this.x + this.vx, this.y + this.vy, this.radius);
+      hitAnyWalls = (hitWall.top || hitWall.left || hitWall.right || hitWall.bottom);
+    }
+
+    if (hitAnyWalls) {
+      this.color = 'red';
+      if (hitWall.top || hitWall.bottom) {
+        this.vy *= -.01;
+      }
+      if (hitWall.left || hitWall.right) {
+        this.vx *= -.01;
+      }
+      if (this.walkDirection < 0) {
+        this.rotationAngle = -Math.atan2(-this.vy, this.vx);
+        this.walkDirection = Math.abs(this.walkDirection);
+      }
+      else
+        this.rotationAngle = -Math.atan2(-this.vy, this.vx);
+      this.vx = Math.cos(this.rotationAngle) * moveStep;
+      this.vy = Math.sin(this.rotationAngle) * moveStep;
+    }
     this.x += this.vx;
     this.y += this.vy;
     return this;
   }
 
   render(g) {
-    g.circle(this.color, this.x, this.y, this.r, true);
+    g.circle(this.color, this.x, this.y, this.radius, true);
     g.line('black', this.x, this.y,
       this.x + Math.cos(this.rotationAngle) * 30,
       this.y + Math.sin(this.rotationAngle) * 30, 4);

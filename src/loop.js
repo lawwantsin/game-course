@@ -4,18 +4,16 @@ import { Box, Circle } from "./shapes"
 class Loop {
   constructor(G, E, M, I, C) {
     this.map = M;
-    // this.player = P;
-    // if (this.player) this.player.mode = this.mode;
     this.graphics = G;
-    this.input = I;
+    this.inputData = I;
     this.animation = {}
     this.mode = DEBUG;
     this.entities = E;
     this.collisions = C;
   }
 
-  handleInput() {
-    const K = this.input.KEYS_PRESSED;
+  input() {
+    const K = this.inputData.KEYS_PRESSED;
     if (K["]"]) {
       this.animation.fps *= 2
       this.start(this.animation.fps)
@@ -30,49 +28,36 @@ class Loop {
     }
     if (K["Escape"]) {
       this.mode = !this.mode;
-      if (this.player) this.player.mode = !this.mode;
+      this.entities.map(e => e.mode = this.mode);
     }
+    return this;
   }
 
-  move() {
-    this.handleInput()
-    if (this.player) {
-      this.player.input();
-      this.player.update();
-      this.player.render();
-    }
-  }
-
-  drawBG() {
-    const G = this.graphics;
-    const cw = G.canvas.width;
-    const ch = G.canvas.height;
-    G.rect('white', 0, 0, cw, ch, true)
-  }
-
-  renderMe(x, y) {
-    const C = this.collisions;
-    const G = this.graphics;
-    let fill = false;
-    const me = new Circle(x, y, 100);
-    this.entities.map(e => {
-      const them = e;
-      const fill = C.detectCollision(me, them)
-      me.update(fill);
-      them.update(fill);
-    });
-    me.render(G, 'green');
-  }
+  // renderMe(x, y) {
+  //   const C = this.collisions;
+  //   const G = this.graphics;
+  //   let fill = false;
+  //   const me = new Circle(x, y, 100);
+  //   this.entities.map(e => {
+  //     const them = e;
+  //     const fill = C.detectCollision(me, them)
+  //     me.update(fill);
+  //     them.update(fill);
+  //   });
+  //   me.render(G, 'green');
+  // }
 
   doOneFrame() {
-    const { x, y, buttons } = this.input.mouse;
-    const G = this.graphics;
-    this.drawBG();
+    this.input();
+    const { x, y, buttons } = this.inputData.mouse;
+    this.graphics.drawBG('white');
     if (this.map) this.map.render();
-    this.entities.map((t, index) => t.render(G, ['red', 'blue'][index]));
-    if (buttons) {
-      this.renderMe(x, y);
-    }
+    this.entities.map(i => i.input())
+        .map(u => u.update())
+        .map(r => r.render(this.graphics));
+    // if (buttons) {
+    //   this.renderMe(x, y);
+    // }
   }
 
   start(fps) {
