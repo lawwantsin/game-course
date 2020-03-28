@@ -1,49 +1,62 @@
 import { blank
  } from "./map-data"
 import { Box, Circle } from "./shapes"
+import Vector from "./vector";
 import Collisions from "./collisions"
 const OPEN = 0, WALL = 1;
 
 class Map {
   constructor(G, grid) {
     this.graphics = G;
+    this.width = G.canvas.width;
+    this.height = G.canvas.height;
     this.grid = grid;
     this.playerTiles = [...blank];
     window.addEventListener('resize', () => this.resize());
     this.resize();
   }
 
-  hitOuterWall(x, y, r) {
-    const width = this.graphics.canvas.width;
-    const height = this.graphics.canvas.height;
-    const left = (x - r < this.TILE_WIDTH);
-    const right = (x + r > width - this.TILE_WIDTH);
-    const top = (y - r < this.TILE_HEIGHT);
-    const bottom = (y + r > height - this.TILE_HEIGHT);
-    return { left, right, top, bottom };
+  collision(rect, circle, circleV){
+    const nearestX = Math.max(rect.position.x, Math.min(circle.position.x, rect.position.x + rect.w));
+    const nearestY = Math.max(rect.y, Math.min(circle.position.y, rect.position.y + rect.h));
+    const dist = new Vector(circle.position.x - nearestX, circle.position.y - nearestY);
+    if (circleV.dot(dist) < 0) { //if circle is moving toward the rect
+      return false;
+    }
+    const penetrationDepth = circle.r - dist.length();
+    const penetrationVector = dist.normalize().multiply(penetrationDepth);
+    const pos = circle.position.subtract(penetrationVector);
+    circle.position = pos;
+    return { pos: circle.position, vel: penetrationVector};
   }
 
-  detectCollisions(x, y, r) {
-    const row = Math.floor(y / this.TILE_HEIGHT );
-    const col = Math.floor(x / this.TILE_WIDTH );
-    for (var i = 0; i < this.MAP_NUM_ROWS; i++) {
-      for (var j = 0; j < this.MAP_NUM_COLS; j++) {
-        const current = this.grid[i][j];
-        if (current !== OPEN) {
-          const me = new Circle(x, y, r);
-          const them = new Box(j * this.TILE_WIDTH, i * this.TILE_HEIGHT, this.TILE_WIDTH, this.TILE_HEIGHT);
-          const c = Collisions.detect(me, them);
-          if (c) return true;
-        }
-      }
+  hasWallAt(circle, circleV) {
+    const x = circle.position.x;
+    const y = circle.position.y;
+    const w = this.TILE_WIDTH
+    const h = this.TILE_HEIGHT
+    if (x < w || x > this.width - w ||
+        y < h || y > this.height - h) {
+      return true;
+    }
+    var gridIndX = Math.floor(x / w);
+    var gridIndY = Math.floor(y / h);
+    if (this.grid[gridIndY][gridIndX] !== 0) {
+      const wy = gridIndY * h;
+      const wx = gridIndX * w;
+      const box = new Box(wx, wy, wx+w, wy+h);
+      const hit = this.collision(circle, box, circleV)
+      return hit;
     }
   }
 
   resize() {
+    this.height = this.graphics.canvas.height;
+    this.width = this.graphics.canvas.width;
     this.MAP_NUM_ROWS = this.grid.length;
     this.MAP_NUM_COLS = this.grid[0].length;
-    this.TILE_HEIGHT = Math.floor(this.graphics.canvas.height / this.MAP_NUM_ROWS);
-    this.TILE_WIDTH = Math.floor(this.graphics.canvas.width / this.MAP_NUM_COLS);
+    this.TILE_HEIGHT = Math.floor(this.height / this.MAP_NUM_ROWS);
+    this.TILE_WIDTH = Math.floor(this.width / this.MAP_NUM_COLS);
   }
 
   render() {
@@ -61,46 +74,3 @@ class Map {
 }
 
 export default Map;
-
-//
-// hitInnerWalls(x, y, r) {
-//   const width = this.graphics.canvas.width;
-//   const height = this.graphics.canvas.height;
-//
-//   // Bottom
-//   const row1 = Math.floor((y + r) / this.TILE_HEIGHT );
-//   const col1 = Math.floor(x / this.TILE_WIDTH );
-//
-//   // Top
-//   const row2 = Math.floor((y - r) / this.TILE_HEIGHT );
-//   const col2 = Math.floor(x / this.TILE_WIDTH );
-//
-//   // Left
-//   const row3 = Math.floor(y / this.TILE_HEIGHT );
-//   const col3 = Math.floor((x - r) / this.TILE_WIDTH );
-//
-//   // Right
-//   const row4 = Math.floor(y / this.TILE_HEIGHT );
-//   const col4 = Math.floor((x + r) / this.TILE_WIDTH );
-//
-//   const GREEN = 1, RED = 2, BLUE = 3, YELLOW = 4;
-//
-//   this.playerTiles = this.playerTiles.map(f => f.map(g => 0)) // Clear
-//   this.playerTiles[row1][col1] = GREEN;   // Bottom
-//   this.playerTiles[row2][col2] = RED;     // Top
-//   this.playerTiles[row3][col3] = BLUE;    // Left
-//   this.playerTiles[row4][col4] = YELLOW;  // Right
-//   if (this.grid[row1][col1] > 0 || this.grid[row2][col2] > 0 ||
-//       this.grid[row3][col3] > 0 || this.grid[row4][col4] > 0) {
-//     const right = (x + r < col4 * this.TILE_WIDTH + this.TILE_WIDTH);
-//     const left = (x + r > col2 * this.TILE_WIDTH);
-//     const bottom = (y + r < row1 * this.TILE_HEIGHT + this.TILE_HEIGHT);
-//     const top = (y + r > row2 * this.TILE_HEIGHT);
-//     if (this.playerTiles[row1][col1] === 1 && this.grid[row1][col1] === 1) this.grid[row1][col1] = 2;
-//     if (this.playerTiles[row2][col2] === 1 && this.grid[row2][col2] === 1) this.grid[row2][col2] = 2;
-//     if (this.playerTiles[row3][col3] === 1 && this.grid[row3][col3] === 1) this.grid[row3][col3] = 2;
-//     if (this.playerTiles[row4][col4] === 1 && this.grid[row4][col4] === 1) this.grid[row4][col4] = 2;
-//     return { left, right, top, bottom };
-//   }
-//   return { left: false, right: false, top: false, bottom: false };
-// }

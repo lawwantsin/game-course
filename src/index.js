@@ -15,7 +15,8 @@ const boot = () => {
   C = Collisions;
   I = new Input()
   M = new Map(G, maze)
-  E = [new Player(G, M, I)]
+  const player = new Player(G, M, I);
+  E = [player]
   L = new Loop(G, E, M, I, C)
   L.start();
 }

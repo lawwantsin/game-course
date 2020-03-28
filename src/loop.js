@@ -47,6 +47,7 @@ class Loop {
   //   me.render(G, 'green');
   // }
 
+
   doOneFrame() {
     this.input();
     const { x, y, buttons } = this.inputData.mouse;
